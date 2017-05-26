@@ -2,17 +2,22 @@
 
 Now that each worker node is online we need to add routes to make sure that Pods running on different machines can talk to each other. In this lab we are not going to provision any overlay networks and instead rely on Layer 3 networking. That means we need to add routes to our router. In GCP each network has a router that can be configured. If this was an on-prem datacenter then ideally you would need to add the routes to your local router.
 
-After completing this lab you will have the following router entries:
+## Container Subnets
+
+The IP addresses for each pod will be allocated from the `podCIDR` range assigned to each Kubernetes worker through the node registration process. The `podCIDR` will be allocated from the cluster cidr range as configured on the Kubernetes Controller Manager with the following flag:
 
 ```
-$ gcloud compute routes list --filter "network=kubernetes"
+--cluster-cidr=10.200.0.0/16
 ```
+
+Based on the above configuration each node will receive a `/24` subnet. For example:
+
 ```
-NAME                            NETWORK     DEST_RANGE     NEXT_HOP                  PRIORITY
-kubernetes-route-10-200-0-0-24  kubernetes  10.200.0.0/24  10.240.0.30               1000
-kubernetes-route-10-200-1-0-24  kubernetes  10.200.1.0/24  10.240.0.31               1000
-kubernetes-route-10-200-2-0-24  kubernetes  10.200.2.0/24  10.240.0.32               1000
-```
+10.200.0.0/24
+10.200.1.0/24
+10.200.2.0/24
+...
+``` 
 
 ## Get the Routing Table
 
@@ -28,30 +33,30 @@ kubectl get nodes \
 Output:
 
 ```
-10.240.0.30 10.200.0.0/24 
-10.240.0.31 10.200.1.0/24 
-10.240.0.32 10.200.2.0/24 
+10.240.0.20 10.200.0.0/24 
+10.240.0.21 10.200.1.0/24 
+10.240.0.22 10.200.2.0/24 
 ```
 
-Use `gcloud` to add the routes to GCP:
+## Create Routes
 
 ```
 gcloud compute routes create kubernetes-route-10-200-0-0-24 \
-  --network kubernetes \
-  --next-hop-address 10.240.0.30 \
+  --network kubernetes-the-hard-way \
+  --next-hop-address 10.240.0.20 \
   --destination-range 10.200.0.0/24
 ```
 
 ```
 gcloud compute routes create kubernetes-route-10-200-1-0-24 \
-  --network kubernetes \
-  --next-hop-address 10.240.0.31 \
+  --network kubernetes-the-hard-way \
+  --next-hop-address 10.240.0.21 \
   --destination-range 10.200.1.0/24
 ```
 
 ```
 gcloud compute routes create kubernetes-route-10-200-2-0-24 \
-  --network kubernetes \
-  --next-hop-address 10.240.0.32 \
+  --network kubernetes-the-hard-way \
+  --next-hop-address 10.240.0.22 \
   --destination-range 10.200.2.0/24
 ```

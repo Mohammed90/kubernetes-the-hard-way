@@ -9,25 +9,17 @@ kubectl run nginx --image=nginx --port=80 --replicas=3
 ```
 
 ```
-deployment "nginx" created
-```
-
-```
 kubectl get pods -o wide
 ```
 ```
-NAME                     READY     STATUS    RESTARTS   AGE       IP           NODE
-nginx-2032906785-ms8hw   1/1       Running   0          21s       10.200.2.2   worker2
-nginx-2032906785-sokxz   1/1       Running   0          21s       10.200.1.2   worker1
-nginx-2032906785-u8rzc   1/1       Running   0          21s       10.200.0.2   worker0
+NAME                    READY     STATUS    RESTARTS   AGE       IP           NODE
+nginx-158599303-7k8p9   1/1       Running   0          13s       10.200.2.3   worker2
+nginx-158599303-h0zcs   1/1       Running   0          13s       10.200.1.2   worker1
+nginx-158599303-rfhm3   1/1       Running   0          13s       10.200.0.2   worker0
 ```
 
 ```
 kubectl expose deployment nginx --type NodePort
-```
-
-```
-service "nginx" exposed
 ```
 
 > Note that --type=LoadBalancer will not work because we did not configure a cloud provider when bootstrapping this cluster.
@@ -35,19 +27,21 @@ service "nginx" exposed
 Grab the `NodePort` that was setup for the nginx service:
 
 ```
-export NODE_PORT=$(kubectl get svc nginx --output=jsonpath='{range .spec.ports[0]}{.nodePort}')
+NODE_PORT=$(kubectl get svc nginx --output=jsonpath='{range .spec.ports[0]}{.nodePort}')
 ```
+
+### Create the Node Port Firewall Rule
 
 ```
 gcloud compute firewall-rules create kubernetes-nginx-service \
   --allow=tcp:${NODE_PORT} \
-  --network kubernetes
+  --network kubernetes-the-hard-way
 ```
 
 Grab the `EXTERNAL_IP` for one of the worker nodes:
 
 ```
-export NODE_PUBLIC_IP=$(gcloud compute instances describe worker0 \
+NODE_PUBLIC_IP=$(gcloud compute instances describe worker0 \
   --format 'value(networkInterfaces[0].accessConfigs[0].natIP)')
 ```
 
